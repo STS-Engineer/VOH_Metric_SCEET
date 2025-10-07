@@ -126,9 +126,15 @@ def index():
                  flash("✅ Toutes les lignes ont été enregistrées avec succès !", "success")
                  return redirect(url_for('index'))
 
-              except Exception as e:
-                  conn.rollback()
-                  flash(f"❌ Erreur d’insertion : {e}", 'danger')
+              except psycopg2.errors.UniqueViolation:
+                conn.rollback()
+                flash(f"⚠️ Erreur : Des données existent déjà pour la semaine {weekno}. Veuillez modifier les données existantes.", 'warning')
+              except ValueError as ve:
+                conn.rollback()
+                flash(f"❌ Erreur de saisie : Veuillez vérifier que tous les champs numériques sont corrects. Détails : {ve}", 'danger')
+              except psycopg2.Error as db_error:
+                conn.rollback()
+                flash(f"❌ Erreur de base de données : {db_error}", 'danger')
           
 
         # Sélection de toutes les données existantes
@@ -149,6 +155,7 @@ def index():
         if conn:
             conn.rollback()
         flash(f"❌ Erreur système : {e}", 'danger')
+        return redirect(url_for('index'))
 
     finally:
         if conn:
